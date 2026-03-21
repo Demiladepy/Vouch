@@ -1,0 +1,38 @@
+{
+  "name": "vouch-lending",
+  "version": "1.0.0",
+  "description": "Undercollateralized USDT lending via on-chain reputation — Tether WDK Hackathon",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "demo": "ts-node-dev src/demo.ts"
+  },
+  "dependencies": {
+    "@tetherto/wdk": "latest",
+    "@tetherto/wdk-wallet-evm": "latest",
+    "@tetherto/wdk-wallet-evm-erc-4337": "latest",
+    "@tetherto/wdk-wallet-tron": "^1.0.0-beta.4",
+    "axios": "^1.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "ethers": "^6.0.0",
+    "express": "^4.18.0",
+    "groq-sdk": "^1.1.1",
+    "node-cron": "^3.0.0",
+    "openai": "^6.32.0",
+    "sql.js": "^1.10.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.0",
+    "@types/express": "^4.17.0",
+    "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.0",
+    "@types/sql.js": "^1.4.0",
+    "@types/uuid": "^9.0.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.0.0"
+  }
+}
