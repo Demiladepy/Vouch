@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vouch — Score Explorer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>V</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #06070A;
+    --surface: #0E1015;
+    --surface2: #161920;
+    --surface3: #1E2128;
+    --border: #232730;
+    --border-light: #2E3340;
+    --text: #EAEDF3;
+    --text-secondary: #B0B4C0;
+    --text-muted: #6B7080;
+    --green: #34D399;
+    --green-bright: #6EE7B7;
+    --green-dim: rgba(52,211,153,0.08);
+    --green-glow: rgba(52,211,153,0.25);
+    --amber: #F59E0B;
+    --amber-dim: rgba(245,158,11,0.1);
+    --red: #F87171;
+    --red-dim: rgba(248,113,113,0.1);
+    --slate: #94A3B8;
+    --bronze: #D97706;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .container {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--green);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 16px;
+  }
+
+  .nav-links a {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .hero h1 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--green), var(--green-bright));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero p {
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+
+  /* Search */
+  .search-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .input-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-row input::placeholder { color: var(--text-muted); font-family: 'Inter', sans-serif; }
+  .input-row input:focus { border-color: var(--green); }
+
+  .btn-score {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-score:hover { background: var(--green-bright); transform: translateY(-1px); }
+  .btn-score:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Quick chips */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .chip:hover { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+  .chip-label {
+    font-family: 'Inter', sans-serif;
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-bottom: 6px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Loading */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 60px 0;
+  }
+
+  .loading.active { display: block; }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading p { color: var(--text-muted); font-size: 14px; }
+
+  /* Result */
+  .result {
+    display: none;
+    animation: fadeUp 0.5s ease;
+  }
+
+  .result.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Score Ring */
+  .score-section {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .score-ring-wrap {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 20px;
+  }
+
+  .score-ring-wrap svg {
+    width: 200px;
+    height: 200px;
+    transform: rotate(-90deg);
+  }
+
+  .ring-bg {
+    fill: none;
+    stroke: var(--surface3);
+    stroke-width: 10;
+  }
+
+  .ring-fg {
+    fill: none;
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-dasharray: 502;
+    stroke-dashoffset: 502;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s;
+  }
+
+  .score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .tier-badge {
+    display: inline-block;
+    padding: 6px 20px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 12px;
+  }
+
+  .tier-PLATINUM { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+  .tier-GOLD { background: rgba(245,158,11,0.12); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+  .tier-SILVER { background: rgba(148,163,184,0.12); color: var(--slate); border: 1px solid rgba(148,163,184,0.3); }
+  .tier-BRONZE { background: rgba(217,119,6,0.12); color: var(--bronze); border: 1px solid rgba(217,119,6,0.3); }
+  .tier-DECLINED { background: var(--red-dim); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+
+  /* Breakdown */
+  .breakdown-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .breakdown-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .breakdown-row:last-child { border-bottom: none; }
+
+  .breakdown-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .breakdown-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .breakdown-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 160px;
+  }
+
+  .breakdown-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .breakdown-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0;
+  }
+
+  .breakdown-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  /* Loan terms card */
+  .terms-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .terms-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .terms-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .term-item {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .term-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .term-label {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Tips */
+  .tips-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .tips-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .tip-icon {
+    color: var(--amber);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* Actions */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .btn-apply {
+    flex: 1;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .btn-apply:hover { background: var(--green-bright); }
+
+  .btn-share {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-share:hover { border-color: var(--green); color: var(--green); }
+
+  /* Error */
+  .error-msg {
+    display: none;
+    background: var(--red-dim);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--red);
+    margin-top: 16px;
+  }
+
+  .error-msg.active { display: block; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface2);
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    transition: transform 0.3s ease;
+    z-index: 10000;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Explanation */
+  .explanation-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .explanation-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .exp-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.6;
+  }
+
+  .exp-line:last-child { border-bottom: none; }
+
+  @media (max-width: 480px) {
+    .input-row { flex-direction: column; }
+    .terms-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 26px; }
+    .score-value { font-size: 44px; }
+    .breakdown-bar-wrap { min-width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <a href="/" class="logo">Vouch</a>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/apply">Apply</a>
+      <a href="/repay">Repay</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>Score Explorer</h1>
+    <p>Paste any EVM wallet address to see its Trust Score instantly</p>
+  </div>
+
+  <!-- Search -->
+  <div class="search-card">
+    <div class="input-row">
+      <input type="text" id="addressInput" placeholder="0x... or ENS name" autocomplete="off" spellcheck="false">
+      <button class="btn-score" id="scoreBtn" onclick="analyzeWallet()">Analyze</button>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="chip-label" style="margin-top:16px;">Try a famous wallet</div>
+    <div class="chips">
+      <div class="chip" onclick="quickSelect('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')">vitalik.eth</div>
+      <div class="chip" onclick="quickSelect('0x2FAF487A4414Fe77e2327F0bf4AE2a264a776AD2')">FTX Exploiter</div>
+      <div class="chip" onclick="quickSelect('0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503')">Binance</div>
+      <div class="chip" onclick="quickSelect('0x0000000000000000000000000000000000000001')">Fresh Wallet</div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Querying Etherscan, Aave V3, ENS...</p>
+    <p style="margin-top:4px; font-size:12px; color:var(--text-muted);">This may take 5-10 seconds</p>
+  </div>
+
+  <!-- Result -->
+  <div class="result" id="result">
+    <!-- Score ring -->
+    <div class="score-section">
+      <div class="score-ring-wrap">
+        <svg viewBox="0 0 180 180">
+          <circle class="ring-bg" cx="90" cy="90" r="80" />
+          <circle class="ring-fg" id="ringFg" cx="90" cy="90" r="80" />
+        </svg>
+        <div class="score-value" id="scoreValue">0</div>
+      </div>
+      <div class="score-label" id="walletLabel">—</div>
+      <div class="tier-badge" id="tierBadge">—</div>
+    </div>
+
+    <!-- Breakdown -->
+    <div class="breakdown-card">
+      <h3>Score Breakdown</h3>
+      <div id="breakdownRows"></div>
+    </div>
+
+    <!-- Loan terms -->
+    <div class="terms-card" id="termsCard">
+      <h3>Maximum Loan Offer</h3>
+      <div class="terms-grid">
+        <div class="term-item">
+          <div class="term-value" id="termAmount" style="color:var(--green)">—</div>
+          <div class="term-label">Max Amount</div>
+        </div>
+        <div class="term-item">
+          <div class="term-value" id="termDays">—</div>
+          <div class="term-label">Max Duration</div>
+        </div>
+        <div class="term-item">
+          <div class="term-value" id="termApr">—</div>
+          <div class="term-label">APR</div>
+        </div>
+        <div class="term-item">
+          <div class="term-value" id="termCollateral">—</div>
+          <div class="term-label">Collateral</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Explanation -->
+    <div class="explanation-card">
+      <h3>Scoring Details</h3>
+      <div id="explanationLines"></div>
+    </div>
+
+    <!-- Tips -->
+    <div class="tips-card" id="tipsCard" style="display:none">
+      <h3>How to Improve Your Score</h3>
+      <div id="tipsList"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <a class="btn-apply" href="/apply">Apply for a Loan</a>
+      <button class="btn-share" id="shareBtn" onclick="shareResult()">Share</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Link copied to clipboard</div>
+
+<script>
+  const API_BASE = window.location.origin;
+
+  // Check URL params for pre-loaded wallet
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('wallet')) {
+    document.getElementById('addressInput').value = params.get('wallet');
+    setTimeout(() => analyzeWallet(), 300);
+  }
+
+  function quickSelect(addr) {
+    document.getElementById('addressInput').value = addr;
+    analyzeWallet();
+  }
+
+  async function analyzeWallet() {
+    const input = document.getElementById('addressInput').value.trim();
+    const btn = document.getElementById('scoreBtn');
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('result');
+    const errorMsg = document.getElementById('errorMsg');
+
+    errorMsg.classList.remove('active');
+    result.classList.remove('active');
+
+    if (!input) {
+      errorMsg.textContent = 'Please enter a wallet address.';
+      errorMsg.classList.add('active');
+      return;
+    }
+
+    // Basic validation — accept 0x addresses or ENS-like names
+    let address = input;
+    if (!input.startsWith('0x')) {
+      // Treat as ENS — for demo, map known names
+      const ensMap = {
+        'vitalik.eth': '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+      };
+      if (ensMap[input.toLowerCase()]) {
+        address = ensMap[input.toLowerCase()];
+      } else if (!input.includes('.')) {
+        errorMsg.textContent = 'Invalid address. Enter a 0x address or ENS name.';
+        errorMsg.classList.add('active');
+        return;
+      }
+    }
+
+    if (address.startsWith('0x') && !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      errorMsg.textContent = 'Invalid Ethereum address format.';
+      errorMsg.classList.add('active');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Analyzing...';
+    loading.classList.add('active');
+
+    try {
+      const resp = await fetch(`${API_BASE}/api/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      loading.classList.remove('active');
+      renderResult(data, address);
+    } catch (err) {
+      loading.classList.remove('active');
+      errorMsg.textContent = err.message || 'Failed to score wallet. Try again.';
+      errorMsg.classList.add('active');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Analyze';
+    }
+  }
+
+  function renderResult(data, address) {
+    const result = document.getElementById('result');
+    const score = data.score;
+    const tier = data.tier;
+
+    // Update URL without reload
+    history.replaceState(null, '', `/explore?wallet=${address}`);
+
+    // Animate score ring
+    const ring = document.getElementById('ringFg');
+    const circumference = 2 * Math.PI * 80; // ~502
+    const offset = circumference - (score / 100) * circumference;
+    const color = tierColor(tier);
+    ring.style.stroke = color;
+    setTimeout(() => { ring.style.strokeDashoffset = offset; }, 50);
+
+    // Animate score number
+    const scoreEl = document.getElementById('scoreValue');
+    scoreEl.style.color = color;
+    animateNumber(scoreEl, 0, score, 1200);
+
+    // Wallet label
+    document.getElementById('walletLabel').textContent =
+      address.length > 20 ? address.slice(0, 10) + '...' + address.slice(-8) : address;
+
+    // Tier badge
+    const badge = document.getElementById('tierBadge');
+    badge.textContent = tier;
+    badge.className = 'tier-badge tier-' + tier;
+
+    // Breakdown
+    const categories = [
+      { name: 'Wallet Maturity', icon: '⏳', key: 'walletMaturity', max: 20, color: '#818CF8' },
+      { name: 'DeFi Depth', icon: '🔗', key: 'defiDepth', max: 20, color: '#34D399' },
+      { name: 'Repayment History', icon: '✅', key: 'repaymentHistory', max: 25, color: '#F59E0B' },
+      { name: 'Asset Stability', icon: '💰', key: 'assetStability', max: 20, color: '#60A5FA' },
+      { name: 'Community', icon: '👥', key: 'communitySignals', max: 15, color: '#A78BFA' },
+    ];
+
+    const breakdownContainer = document.getElementById('breakdownRows');
+    breakdownContainer.innerHTML = '';
+
+    categories.forEach((cat, i) => {
+      const val = data.breakdown[cat.key] || 0;
+      const pct = (val / cat.max) * 100;
+      const row = document.createElement('div');
+      row.className = 'breakdown-row';
+      row.innerHTML = `
+        <div class="breakdown-label">
+          <div class="breakdown-icon" style="background:${cat.color}15; font-size:16px;">${cat.icon}</div>
+          ${cat.name}
+        </div>
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-bar">
+            <div class="breakdown-bar-fill" id="bar-${cat.key}" style="background:${cat.color}"></div>
+          </div>
+          <div class="breakdown-score" style="color:${cat.color}">${val}/${cat.max}</div>
+        </div>
+      `;
+      breakdownContainer.appendChild(row);
+
+      // Animate bars
+      setTimeout(() => {
+        document.getElementById('bar-' + cat.key).style.width = pct + '%';
+      }, 200 + i * 100);
+    });
+
+    // Loan terms
+    const terms = data.loanTerms;
+    if (terms && terms.maxAmountUsdt > 0) {
+      document.getElementById('termsCard').style.display = '';
+      document.getElementById('termAmount').textContent = '$' + terms.maxAmountUsdt.toLocaleString();
+      document.getElementById('termDays').textContent = terms.maxDurationDays + 'd';
+      document.getElementById('termApr').textContent = terms.aprPercent + '%';
+      document.getElementById('termCollateral').textContent = terms.collateralPercent + '%';
+    } else {
+      document.getElementById('termsCard').style.display = 'none';
+    }
+
+    // Explanation
+    const expContainer = document.getElementById('explanationLines');
+    expContainer.innerHTML = '';
+    (data.explanation || []).forEach(line => {
+      const div = document.createElement('div');
+      div.className = 'exp-line';
+      div.textContent = line;
+      expContainer.appendChild(div);
+    });
+
+    // Tips
+    const tips = data.improvementTips || [];
+    const tipsCard = document.getElementById('tipsCard');
+    const tipsList = document.getElementById('tipsList');
+    if (tips.length > 0) {
+      tipsCard.style.display = '';
+      tipsList.innerHTML = '';
+      tips.forEach(tip => {
+        const div = document.createElement('div');
+        div.className = 'tip';
+        div.innerHTML = `<span class="tip-icon">&#9670;</span><span>${tip}</span>`;
+        tipsList.appendChild(div);
+      });
+    } else {
+      tipsCard.style.display = 'none';
+    }
+
+    // Show result
+    result.classList.add('active');
+  }
+
+  function tierColor(tier) {
+    const map = {
+      PLATINUM: '#34D399',
+      GOLD: '#F59E0B',
+      SILVER: '#94A3B8',
+      BRONZE: '#D97706',
+      DECLINED: '#F87171',
+    };
+    return map[tier] || '#6B7080';
+  }
+
+  function animateNumber(el, start, end, duration) {
+    const startTime = performance.now();
+    function update(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(start + (end - start) * eased);
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+
+  function shareResult() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    });
+  }
+
+  // Enter key triggers analyze
+  document.getElementById('addressInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') analyzeWallet();
+  });
+</script>
+
+</body>
+</html>

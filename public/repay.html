@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vouch — Repay Loan</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>V</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #06070A;
+    --surface: #0E1015;
+    --surface2: #161920;
+    --surface3: #1E2128;
+    --border: #232730;
+    --border-light: #2E3340;
+    --text: #EAEDF3;
+    --text-secondary: #B0B4C0;
+    --text-muted: #6B7080;
+    --green: #34D399;
+    --green-bright: #6EE7B7;
+    --green-dim: rgba(52,211,153,0.08);
+    --green-glow: rgba(52,211,153,0.25);
+    --amber: #F59E0B;
+    --amber-dim: rgba(245,158,11,0.1);
+    --red: #F87171;
+    --red-dim: rgba(248,113,113,0.1);
+    --slate: #94A3B8;
+    --bronze: #D97706;
+    --radius: 12px;
+    --radius-lg: 16px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .container {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--green);
+    text-decoration: none;
+  }
+
+  .nav-links { display: flex; gap: 16px; }
+  .nav-links a { font-size: 13px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+  }
+
+  .hero p { color: var(--text-muted); font-size: 15px; }
+
+  /* Lookup */
+  .lookup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .input-row { display: flex; gap: 10px; }
+
+  .input-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    outline: none;
+  }
+
+  .input-row input::placeholder { color: var(--text-muted); font-family: 'Inter', sans-serif; }
+  .input-row input:focus { border-color: var(--green); }
+
+  .btn-primary {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover { background: var(--green-bright); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error-msg {
+    display: none;
+    background: var(--red-dim);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--red);
+    margin-top: 16px;
+  }
+
+  .error-msg.active { display: block; }
+
+  /* No loans */
+  .no-loans {
+    display: none;
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+
+  .no-loans.active { display: block; }
+
+  .no-loans a { color: var(--green); text-decoration: none; }
+
+  /* Loan card */
+  .loan-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+    animation: fadeUp 0.4s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .loan-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .loan-amount {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--green);
+  }
+
+  .loan-status {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .status-active { background: var(--green-dim); color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+  .status-overdue { background: var(--red-dim); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+  .status-repaid { background: rgba(148,163,184,0.1); color: var(--slate); border: 1px solid rgba(148,163,184,0.3); }
+
+  .loan-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .detail-item { padding: 12px; background: var(--surface2); border-radius: var(--radius); }
+  .detail-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .detail-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* Countdown */
+  .countdown-section {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .countdown-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .countdown-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .countdown-value.urgent { color: var(--red); }
+  .countdown-value.ok { color: var(--green); }
+
+  /* Progress bar */
+  .progress-section { margin-bottom: 20px; }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .progress-bar {
+    height: 8px;
+    background: var(--surface3);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+
+  /* Score impact */
+  .score-impact {
+    background: var(--green-dim);
+    border: 1px solid rgba(52,211,153,0.15);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--green);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Early repay discount */
+  .early-discount {
+    background: var(--amber-dim);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--amber);
+    margin-bottom: 20px;
+  }
+
+  /* Repay actions */
+  .repay-actions { display: flex; gap: 10px; }
+
+  .btn-repay {
+    flex: 1;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-repay:hover { background: var(--green-bright); }
+
+  .tx-link {
+    display: block;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .tx-link a { color: var(--green); text-decoration: none; }
+  .tx-link a:hover { text-decoration: underline; }
+
+  /* Repay modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    max-width: 420px;
+    width: 90%;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .modal p { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+
+  .modal input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    outline: none;
+    margin-bottom: 12px;
+  }
+
+  .modal input:focus { border-color: var(--green); }
+  .modal-actions { display: flex; gap: 10px; }
+
+  .btn-cancel {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .success-banner {
+    display: none;
+    background: var(--green-dim);
+    border: 1px solid rgba(52,211,153,0.2);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    color: var(--green);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .success-banner.active { display: block; animation: fadeUp 0.4s ease; }
+
+  @media (max-width: 480px) {
+    .loan-details { grid-template-columns: 1fr 1fr; }
+    .hero h1 { font-size: 24px; }
+    .input-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <a href="/" class="logo">Vouch</a>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/explore">Explorer</a>
+      <a href="/apply">Apply</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>Manage Your Loan</h1>
+    <p>View your active loans and make repayments</p>
+  </div>
+
+  <!-- Lookup -->
+  <div class="lookup-card">
+    <div class="input-row">
+      <input type="text" id="walletInput" placeholder="Enter your wallet address (0x...)" spellcheck="false">
+      <button class="btn-primary" id="lookupBtn" onclick="lookupLoans()">Look Up</button>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="success-banner" id="successBanner"></div>
+
+  <!-- No loans state -->
+  <div class="no-loans" id="noLoans">
+    No active loans found for this wallet.<br>
+    <a href="/apply">Apply for a loan</a>
+  </div>
+
+  <!-- Loans container -->
+  <div id="loansContainer"></div>
+</div>
+
+<!-- Repay Modal -->
+<div class="modal-overlay" id="repayModal">
+  <div class="modal">
+    <h2>Confirm Repayment</h2>
+    <p>Enter the transaction hash of your USDT transfer to the pool wallet.</p>
+    <input type="text" id="repayTxHash" placeholder="0x... transaction hash" spellcheck="false">
+    <input type="number" id="repayAmount" placeholder="Amount (USDT)" step="0.01">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="confirmRepayBtn" onclick="confirmRepay()">Confirm Repayment</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = window.location.origin;
+  let currentLoanId = null;
+  let allLoans = [];
+
+  // Check URL params
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('wallet')) {
+    document.getElementById('walletInput').value = params.get('wallet');
+    setTimeout(() => lookupLoans(), 300);
+  }
+
+  async function lookupLoans() {
+    const addr = document.getElementById('walletInput').value.trim();
+    const errorMsg = document.getElementById('errorMsg');
+    const noLoans = document.getElementById('noLoans');
+    const container = document.getElementById('loansContainer');
+
+    errorMsg.classList.remove('active');
+    noLoans.classList.remove('active');
+    container.innerHTML = '';
+
+    if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+      errorMsg.textContent = 'Please enter a valid 0x wallet address.';
+      errorMsg.classList.add('active');
+      return;
+    }
+
+    document.getElementById('lookupBtn').disabled = true;
+    document.getElementById('lookupBtn').textContent = 'Loading...';
+
+    try {
+      const resp = await fetch(`${API_BASE}/api/loans`);
+      const data = await resp.json();
+      const loans = (data.loans || []).filter(
+        l => l.borrower_address.toLowerCase() === addr.toLowerCase()
+      );
+
+      if (loans.length === 0) {
+        noLoans.classList.add('active');
+        return;
+      }
+
+      allLoans = loans;
+      loans.forEach(loan => renderLoanCard(loan, container));
+    } catch (err) {
+      errorMsg.textContent = 'Failed to load loans. Try again.';
+      errorMsg.classList.add('active');
+    } finally {
+      document.getElementById('lookupBtn').disabled = false;
+      document.getElementById('lookupBtn').textContent = 'Look Up';
+    }
+  }
+
+  function renderLoanCard(loan, container) {
+    const card = document.createElement('div');
+    card.className = 'loan-card';
+
+    const statusClass = loan.status === 'active' ? 'status-active'
+      : loan.status === 'overdue' ? 'status-overdue' : 'status-repaid';
+
+    const dueDate = new Date(loan.due_at);
+    const now = new Date();
+    const daysLeft = Math.ceil((dueDate - now) / 86400000);
+    const isUrgent = daysLeft <= 2 && loan.status === 'active';
+    const isOverdue = daysLeft < 0;
+
+    // Calculate early repayment discount (5% off interest if > 50% time remaining)
+    const totalDays = loan.duration_days;
+    const elapsed = totalDays - daysLeft;
+    const pctElapsed = Math.max(0, Math.min(100, (elapsed / totalDays) * 100));
+    const earlyDiscount = (daysLeft > totalDays * 0.5) ? (loan.interest_due * 0.05) : 0;
+    const discountedTotal = loan.total_due - earlyDiscount;
+
+    // Score impact estimate
+    const scoreBoost = loan.trust_score < 75 ? Math.round(Math.random() * 5 + 3) : Math.round(Math.random() * 3 + 1);
+
+    let countdownHtml = '';
+    if (loan.status === 'active' || loan.status === 'overdue') {
+      const countdownClass = isOverdue ? 'urgent' : (isUrgent ? 'urgent' : 'ok');
+      const countdownText = isOverdue
+        ? `${Math.abs(daysLeft)} days overdue`
+        : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`;
+      countdownHtml = `
+        <div class="countdown-section">
+          <div class="countdown-label">Time Until Due</div>
+          <div class="countdown-value ${countdownClass}">${countdownText}</div>
+        </div>
+      `;
+    }
+
+    let scoreImpactHtml = '';
+    if (loan.status === 'active') {
+      scoreImpactHtml = `
+        <div class="score-impact">
+          <span>+${scoreBoost}</span>
+          Repaying on time could boost your Trust Score by ~${scoreBoost} points
+        </div>
+      `;
+    }
+
+    let earlyDiscountHtml = '';
+    if (earlyDiscount > 0 && loan.status === 'active') {
+      earlyDiscountHtml = `
+        <div class="early-discount">
+          Early repayment bonus: Save $${earlyDiscount.toFixed(2)} on interest (5% discount)
+        </div>
+      `;
+    }
+
+    let actionsHtml = '';
+    if (loan.status === 'active' || loan.status === 'overdue') {
+      actionsHtml = `
+        <div class="repay-actions">
+          <button class="btn-repay" onclick="openRepayModal('${loan.id}', ${discountedTotal.toFixed(2)})">
+            Repay $${discountedTotal.toFixed(2)} USDT
+          </button>
+        </div>
+      `;
+    }
+
+    let txHtml = '';
+    if (loan.tx_hash_disbursement) {
+      txHtml = `<div class="tx-link">Disbursement: <a href="https://sepolia.arbiscan.io/tx/${loan.tx_hash_disbursement}" target="_blank">${loan.tx_hash_disbursement.slice(0,10)}...${loan.tx_hash_disbursement.slice(-6)}</a></div>`;
+    }
+    if (loan.tx_hash_repayment) {
+      txHtml += `<div class="tx-link">Repayment: <a href="https://sepolia.arbiscan.io/tx/${loan.tx_hash_repayment}" target="_blank">${loan.tx_hash_repayment.slice(0,10)}...${loan.tx_hash_repayment.slice(-6)}</a></div>`;
+    }
+
+    card.innerHTML = `
+      <div class="loan-header">
+        <div class="loan-amount">$${loan.amount_usdt.toLocaleString()} USDT</div>
+        <div class="loan-status ${statusClass}">${loan.status}</div>
+      </div>
+
+      <div class="loan-details">
+        <div class="detail-item">
+          <div class="detail-value">${loan.apr_percent}%</div>
+          <div class="detail-label">APR</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-value">${loan.duration_days}d</div>
+          <div class="detail-label">Duration</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-value">$${loan.total_due.toFixed(2)}</div>
+          <div class="detail-label">Total Due</div>
+        </div>
+      </div>
+
+      ${countdownHtml}
+
+      <div class="progress-section">
+        <div class="progress-header">
+          <span>Loan Progress</span>
+          <span>${Math.round(pctElapsed)}% elapsed</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${pctElapsed}%"></div>
+        </div>
+      </div>
+
+      ${scoreImpactHtml}
+      ${earlyDiscountHtml}
+      ${actionsHtml}
+      ${txHtml}
+    `;
+
+    container.appendChild(card);
+  }
+
+  function openRepayModal(loanId, amount) {
+    currentLoanId = loanId;
+    document.getElementById('repayAmount').value = amount;
+    document.getElementById('repayTxHash').value = '';
+    document.getElementById('repayModal').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('repayModal').classList.remove('active');
+    currentLoanId = null;
+  }
+
+  async function confirmRepay() {
+    const txHash = document.getElementById('repayTxHash').value.trim();
+    const amount = parseFloat(document.getElementById('repayAmount').value);
+    const btn = document.getElementById('confirmRepayBtn');
+    const errorMsg = document.getElementById('errorMsg');
+
+    if (!txHash || !txHash.startsWith('0x')) {
+      alert('Please enter a valid transaction hash.');
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+
+    try {
+      const resp = await fetch(`${API_BASE}/api/repay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loanId: currentLoanId, txHash, amount }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || 'Repayment failed');
+      }
+
+      closeModal();
+      const banner = document.getElementById('successBanner');
+      banner.textContent = 'Repayment processed successfully! Your Trust Score will be updated.';
+      banner.classList.add('active');
+
+      // Refresh
+      lookupLoans();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Confirm Repayment';
+    }
+  }
+
+  document.getElementById('walletInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') lookupLoans();
+  });
+</script>
+
+</body>
+</html>

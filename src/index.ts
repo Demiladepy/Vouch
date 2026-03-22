@@ -10,6 +10,7 @@ import { disburseLoan, getActiveLoan, getAllLoans, getPoolStats } from './loans'
 import { startRepaymentMonitor, processRepayment } from './monitor';
 import { getAaveBalance } from './yield';
 import { getEthUsdtPrice } from './oracle';
+import { sendWebhook } from './webhooks';
 import { v4 as uuidv4 } from 'uuid';
 import { startAutonomousLoop, getPoolHealthScore, getDynamicApr } from './autonomous';
 import { getAgentDebt } from './agent-market';
@@ -44,6 +45,8 @@ app.post('/api/score', async (req, res) => {
       INSERT INTO applications (id, borrower_address, trust_score, tier, conversation, status)
       VALUES (?, ?, ?, ?, ?, 'scored')
     `, [appId, address, result.score, result.tier, JSON.stringify([])]);
+
+    sendWebhook('score', { wallet: address, score: result.score, tier: result.tier }).catch(() => {});
 
     res.json({ applicationId: appId, ...result });
   } catch (err) {
@@ -156,6 +159,8 @@ app.post('/api/disburse', async (req, res) => {
 
     dbRun(`UPDATE applications SET status = 'disbursed' WHERE id = ?`, [applicationId]);
 
+    sendWebhook('loan_disbursed', { wallet: app.borrower_address, amount: agreement.finalAmountUsdt, score: app.trust_score, tier: app.tier, loanId: loan.id }).catch(() => {});
+
     res.json({ loan, explorerUrl });
   } catch (err) {
     console.error('[Vouch] Disburse error:', err);
@@ -174,6 +179,9 @@ app.post('/api/repay', async (req, res) => {
 
     console.log(`[Vouch] POST /api/repay — loan ${loanId}, amount ${amount}`);
     const result = processRepayment(loanId, txHash, Number(amount));
+
+    sendWebhook('repayment', { amount: Number(amount), loanId }).catch(() => {});
+
     res.json(result);
   } catch (err) {
     console.error('[Vouch] Repay error:', err);
@@ -323,6 +331,14 @@ app.get('/apply', (_req, res) => {
   res.redirect('/');
 });
 
+app.get('/explore', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'explore.html'));
+});
+
+app.get('/repay', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'repay.html'));
+});
+
 app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
@@ -415,6 +431,8 @@ async function main(): Promise<void> {
     console.log(`[Vouch] Server running on port ${config.port}`);
     console.log(`[Vouch] Dashboard:  ${config.baseUrl}`);
     console.log(`[Vouch] Apply:      ${config.baseUrl}/apply`);
+    console.log(`[Vouch] Explorer:   ${config.baseUrl}/explore`);
+    console.log(`[Vouch] Repay:      ${config.baseUrl}/repay`);
     console.log(`[Vouch] API Health: ${config.baseUrl}/api/health`);
   });
 }
