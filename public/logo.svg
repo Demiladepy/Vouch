@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4ade80"/>
+      <stop offset="50%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="50%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+    <linearGradient id="g3" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#4ade80"/>
+      <stop offset="50%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="g4" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#c084fc" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+  <!-- Top-right band -->
+  <polygon points="100,20 170,60 170,90 130,68 100,52 100,20" fill="url(#g2)" opacity="0.95"/>
+  <polygon points="170,60 170,110 140,128 140,78 170,60" fill="url(#g2)" opacity="0.85"/>
+  <!-- Bottom band -->
+  <polygon points="100,180 30,140 30,110 70,132 100,148 100,180" fill="url(#g1)" opacity="0.95"/>
+  <polygon points="30,140 30,90 60,72 60,122 30,140" fill="url(#g3)" opacity="0.85"/>
+  <!-- Left band going up -->
+  <polygon points="30,90 100,52 100,20 30,60 30,90" fill="url(#g3)" opacity="0.9"/>
+  <!-- Right band going down -->
+  <polygon points="170,110 100,148 100,180 170,140 170,110" fill="url(#g2)" opacity="0.9"/>
+  <!-- Center arrow/play shape -->
+  <polygon points="80,72 140,100 80,128" fill="url(#g4)" opacity="0.7"/>
+  <!-- Overlap intersections for depth -->
+  <polygon points="100,52 130,68 100,84 70,68" fill="url(#g1)" opacity="0.4"/>
+  <polygon points="100,116 130,132 100,148 70,132" fill="url(#g2)" opacity="0.4"/>
+</svg>

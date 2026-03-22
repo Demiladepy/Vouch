@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vouch — Repay Loan</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>V</text></svg>">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
 
@@ -68,11 +68,23 @@
   }
 
   .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .logo img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logo span {
     font-family: 'JetBrains Mono', monospace;
     font-size: 22px;
     font-weight: 800;
     color: var(--green);
-    text-decoration: none;
+    letter-spacing: -0.02em;
   }
 
   .nav-links { display: flex; gap: 16px; }
@@ -393,7 +405,7 @@
 
 <div class="container">
   <div class="header">
-    <a href="/" class="logo">Vouch</a>
+    <a href="/" class="logo"><img src="/logo.svg" alt="Vouch"><span>Vouch</span></a>
     <div class="nav-links">
       <a href="/">Dashboard</a>
       <a href="/explore">Explorer</a>
